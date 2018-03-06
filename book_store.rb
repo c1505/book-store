@@ -1,3 +1,4 @@
+require 'ostruct'
 require 'pry'
 class BookStore
   attr_reader :books
@@ -12,20 +13,24 @@ class BookStore
   end
 
   def calculate_price
+    binding.pry
     total = 0
     if number_of_groups == 1
       total = book_group_price(books)
     elsif number_of_groups > 1
       groups = group_by_maximum_discount
-      total = book_group_price(groups[0]) + book_group_price(groups[1]) +
-        book_group_price(groups[2]) + book_group_price(groups[3])
+      total = total_price(groups)
     end
-
     total
-
   end
 
   private
+
+  def total_price(groups)
+    groups.map do |group|
+      book_group_price(group)
+    end.reduce(:+)
+  end
 
   def group_by_maximum_discount
     group_1 = []
@@ -59,6 +64,35 @@ class BookStore
       end
     end
     groups = [group_1, group_2, group_3, group_4]
+  end
+
+  def groups_of_four
+    # remove one from book_counts and add to group
+    # do the same for next key value pair
+    # make a new group when the group size is 4
+    book_counts_array = book_counts.to_a
+    groups = [[]]
+    group_index = 0
+      book_counts_array.each_with_index do |book, count|
+        if count > 0 && groups[group_index].length < 4
+          groups[group_index] << book
+        # elsif count == 0
+        #   book_counts_temp.delete(book)
+        else
+          group_index += 1
+          groups[group_index] = []
+          groups[group_index] << book
+        end
+        [book, (count -1)]
+
+      end
+    binding.pry
+  end
+
+  def groups_of_five
+    # remove one from book_counts and add to group
+    # do the same for next key value pair
+    # make a new group when the group size is 5
   end
 
   def number_of_groups
