@@ -13,13 +13,15 @@ class BookStore
   end
 
   def calculate_price
-    binding.pry
     total = 0
     if number_of_groups == 1
       total = book_group_price(books)
     elsif number_of_groups > 1
-      groups = group_by_maximum_discount
-      total = total_price(groups)
+      if total_price(groups_of_four) < total_price(groups_of_five)
+        total = total_price(groups_of_four)
+      else
+        total = total_price(groups_of_five)
+      end
     end
     total
   end
@@ -32,67 +34,63 @@ class BookStore
     end.reduce(:+)
   end
 
-  def group_by_maximum_discount
-    group_1 = []
-    group_2 = []
-    group_3 = []
-    group_4 = []
-    switcher = false
-    book_counts.each do |k, v|
-      if v == 2
-        if group_1.length > 3 && books.length > 12
-          group_3 << k
-          group_4 << k
-        else
-          group_1 << k
-          group_2 << k
-        end
-      elsif v == 3
-        group_1 << k
-        group_2 << k
-        group_3 << k
-      elsif v == 4
-        group_1 << k
-        group_2 << k
-        group_3 << k
-        group_4 << k
-      elsif switcher == false
-        group_1 << k
-        switcher = books.length != 6
-      elsif switcher == true
-        group_2 << k
-      end
-    end
-    groups = [group_1, group_2, group_3, group_4]
-  end
-
   def groups_of_four
-    # remove one from book_counts and add to group
-    # do the same for next key value pair
-    # make a new group when the group size is 4
     book_counts_array = book_counts.to_a
     groups = [[]]
     group_index = 0
-      book_counts_array.each_with_index do |book, count|
-        if count > 0 && groups[group_index].length < 4
+    until book_counts_array.empty?
+      book_counts_array = book_counts_array.map do |book, count|
+        if count > 0 && groups[group_index].length < 4 && !groups[group_index].include?(book)
           groups[group_index] << book
-        # elsif count == 0
-        #   book_counts_temp.delete(book)
+        elsif groups[group_index].include?(book) && groups.count > 1
+          groups = swap_book_with_other_group(book, groups)
         else
           group_index += 1
           groups[group_index] = []
           groups[group_index] << book
         end
-        [book, (count -1)]
-
-      end
-    binding.pry
+        if count > 1
+          [book, (count -1)]
+        end
+      end.compact
+    end
+    groups
+  end
+  
+  def swap_book_with_other_group(book, groups)
+    last_group = groups.last
+    other_groups = groups.select {|f| f.include?(book) }
+    swap_groups = groups.select {|f| !f.include?(book) }
+    swap_group = swap_groups.first
+    both_groups = last_group + swap_group + [book]
+    arr_1 = []
+    arr_2 = []
+    both_groups.sort.each_slice(2) do |f|
+      arr_1 << f[0]
+      arr_2 << f[1]
+    end
+    other_groups[0..-2] << arr_1 << arr_2
   end
 
   def groups_of_five
-    # remove one from book_counts and add to group
-    # do the same for next key value pair
-    # make a new group when the group size is 5
+    book_counts_array = book_counts.to_a
+    groups = [[]]
+    group_index = 0
+    until book_counts_array.empty?
+      book_counts_array = book_counts_array.map do |book, count|
+        if count > 0 && groups[group_index].length < 5 && !groups[group_index].include?(book)
+          groups[group_index] << book
+        else
+          group_index += 1
+          groups[group_index] = []
+          groups[group_index] << book
+        end
+        if count > 1
+          [book, (count -1)]
+        end
+      end.compact
+    end
+    groups
   end
 
   def number_of_groups
