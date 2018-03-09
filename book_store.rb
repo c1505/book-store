@@ -17,10 +17,13 @@ class BookStore
     if number_of_groups == 1
       total = book_group_price(books)
     elsif number_of_groups > 1
-      if total_price(groups_of_four) < total_price(groups_of_five)
-        total = total_price(groups_of_four)
+      if total_price(group_books(4)) < total_price(group_books(5))
+        total = total_price(group_books(4))
+        print group_books(4)
       else
-        total = total_price(groups_of_five)
+        total = total_price(group_books(5))
+        print "***"
+        print group_books(5)
       end
     end
     total
@@ -34,22 +37,31 @@ class BookStore
     end.reduce(:+)
   end
 
-  def groups_of_four
+  def group_books(max_group_size)
     book_counts_array = book_counts.to_a
     groups = [[]]
     group_index = 0
     until book_counts_array.empty?
       book_counts_array = book_counts_array.map do |book, count|
-        if count > 0 && groups[group_index].length < 4 && !groups[group_index].include?(book)
-          groups[group_index] << book
-        elsif groups[group_index].include?(book) && groups.count > 1
-          groups = swap_book_with_other_group(book, groups)
-        else
-          group_index += 1
-          groups[group_index] = []
-          groups[group_index] << book
+        if count > 0
+          if groups[group_index].length == max_group_size
+            group_index += 1
+            groups[group_index] = []
+            groups[group_index] << book
+          elsif !groups[group_index].include?(book)
+            groups[group_index] << book
+          elsif groups[group_index].include?(book) && groups.count > 1
+            unless groups.select {|f| !f.include?(book) }.first
+              group_index += 1
+            end
+            groups = swap_book_with_other_group(book, groups)
+          else
+            group_index += 1
+            groups[group_index] = []
+            groups[group_index] << book
+          end
         end
-        if count > 1
+        if count > 0
           [book, (count -1)]
         end
       end.compact
@@ -62,35 +74,19 @@ class BookStore
     other_groups = groups.select {|f| f.include?(book) }
     swap_groups = groups.select {|f| !f.include?(book) }
     swap_group = swap_groups.first
-    both_groups = last_group + swap_group + [book]
-    arr_1 = []
-    arr_2 = []
-    both_groups.sort.each_slice(2) do |f|
-      arr_1 << f[0]
-      arr_2 << f[1]
+    if swap_group
+      both_groups = last_group + swap_group + [book]
+      arr_1 = []
+      arr_2 = []
+      both_groups.sort.each_slice(2) do |f|
+        arr_1 << f[0]
+        arr_2 << f[1]
+      end
+      other_groups[0..-2] << arr_1 << arr_2
+    else
+      groups << [book]
+      groups
     end
-    other_groups[0..-2] << arr_1 << arr_2
-  end
-
-  def groups_of_five
-    book_counts_array = book_counts.to_a
-    groups = [[]]
-    group_index = 0
-    until book_counts_array.empty?
-      book_counts_array = book_counts_array.map do |book, count|
-        if count > 0 && groups[group_index].length < 5 && !groups[group_index].include?(book)
-          groups[group_index] << book
-        else
-          group_index += 1
-          groups[group_index] = []
-          groups[group_index] << book
-        end
-        if count > 1
-          [book, (count -1)]
-        end
-      end.compact
-    end
-    groups
   end
 
   def number_of_groups
