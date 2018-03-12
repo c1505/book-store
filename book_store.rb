@@ -19,11 +19,8 @@ class BookStore
     elsif number_of_groups > 1
       if total_price(group_books(4)) < total_price(group_books(5))
         total = total_price(group_books(4))
-        print group_books(4)
       else
         total = total_price(group_books(5))
-        print "***"
-        print group_books(5)
       end
     end
     total
@@ -31,42 +28,58 @@ class BookStore
 
   private
 
-  def total_price(groups)
-    groups.map do |group|
-      book_group_price(group)
-    end.reduce(:+)
-  end
 
+  
+  class Groups
+    attr_reader :book_counts, :groups, :group_index, :book
+    
+    def initialize(book_counts)
+      @book_counts = book_counts.to_a
+    end
+  end
+  
   def group_books(max_group_size)
     book_counts_array = book_counts.to_a
     groups = [[]]
     group_index = 0
     until book_counts_array.empty?
-      book_counts_array = book_counts_array.map do |book, count|
-        if count > 0
-          if groups[group_index].length == max_group_size
-            group_index += 1
-            groups[group_index] = []
-            groups[group_index] << book
-          elsif !groups[group_index].include?(book)
-            groups[group_index] << book
-          elsif groups[group_index].include?(book) && groups.count > 1
-            unless groups.select {|f| !f.include?(book) }.first
+      book_counts_array = book_counts_array.map do |book, quantity|
+        if quantity > 0
+          if book_included_in_current_group?(groups, group_index, book) && groups.count > 1
+            unless any_groups_exist_excluding_current_book?(groups, book)
               group_index += 1
             end
             groups = swap_book_with_other_group(book, groups)
-          else
-            group_index += 1
-            groups[group_index] = []
+          elsif book_excluded_in_current_group?(groups, group_index, book) && max_group_size_exceeded?(groups, group_index, max_group_size)
+            groups[group_index] << book
+          else # groups[group_index].length == max_group_size # or group is one or less and book is already in the group
+            group_index += 1          #increment group
+            groups[group_index] = []  #incrment group
+            
             groups[group_index] << book
           end
-        end
-        if count > 0
-          [book, (count -1)]
+          [book, (quantity - 1)]
+          
         end
       end.compact
     end
     groups
+  end
+  
+  def book_included_in_current_group?(groups, group_index, book)
+     groups[group_index].include?(book)
+  end
+  
+  def book_excluded_in_current_group?(groups, group_index, book)
+    !groups[group_index].include?(book)
+  end
+  
+  def any_groups_exist_excluding_current_book?(groups, book)
+    groups.select {|f| !f.include?(book) }.first
+  end
+  
+  def max_group_size_exceeded?(groups, group_index, max_group_size)
+    groups[group_index].length < max_group_size
   end
   
   def swap_book_with_other_group(book, groups)
@@ -87,6 +100,12 @@ class BookStore
       groups << [book]
       groups
     end
+  end
+  
+  def total_price(groups)
+    groups.map do |group|
+      book_group_price(group)
+    end.reduce(:+)
   end
 
   def number_of_groups
