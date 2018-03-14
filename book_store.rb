@@ -19,12 +19,8 @@ class BookStore
     elsif number_of_groups > 1
       if total_price(group_books(4)) < total_price(group_books(5))
         total = total_price(group_books(4))
-        print group_books(4)
-        print total
-        print "***"
       else
         total = total_price(group_books(5))
-        print group_books(5)
       end
     end
     total
@@ -84,17 +80,7 @@ class Group
       until book_counts.empty?
         @book_counts = book_counts.map do |book, quantity|
           if quantity > 0
-            if book_included_in_current_group?(book) && @groups.count > 1
-              unless any_groups_exist_excluding_current_book?(book)
-                @group_index += 1
-              end
-              groups = swap_book_with_other_group(book)
-            elsif book_excluded_in_current_group?(book) && max_group_size_exceeded?
-              @groups[group_index] << book
-            else # groups[group_index].length == max_group_size # or group is one or less and book is already in the group
-              increment_group
-              @groups[group_index] << book
-            end
+            add_book_to_group(book)
             [book, (quantity - 1)]
           end
         end.compact
@@ -103,6 +89,20 @@ class Group
     end
     
     private
+    
+    def add_book_to_group(book)
+      if book_included_in_current_group?(book) && @groups.count > 1
+        unless any_groups_exist_excluding_current_book?(book)
+          @group_index += 1
+        end
+        groups = swap_book_with_other_group(book)
+      elsif book_excluded_in_current_group?(book) && max_group_size_exceeded?
+        @groups[group_index] << book
+      else # groups[group_index].length == max_group_size # or group is one or less and book is already in the group
+        increment_group
+        @groups[group_index] << book
+      end
+    end
     
     def increment_group
       @group_index += 1
