@@ -1,5 +1,3 @@
-require 'ostruct'
-require 'pry'
 class BookStore
   attr_reader :books
 
@@ -32,7 +30,6 @@ class BookStore
     group = Group.new(book_counts, max_group_size)
     group.group_books
   end
-  
   
   def total_price(groups)
     groups.map do |group|
@@ -96,9 +93,13 @@ class Group
           @group_index += 1
         end
         groups = swap_book_with_other_group(book)
-      elsif book_excluded_in_current_group?(book) && max_group_size_exceeded?
+      elsif book_excluded_in_current_group?(book) && below_max_group_size?
         @groups[group_index] << book
-      else # groups[group_index].length == max_group_size # or group is one or less and book is already in the group
+      elsif !below_max_group_size?
+        increment_group
+        @groups[group_index] << book
+      else
+        # goes in here when max group size is 5
         increment_group
         @groups[group_index] << book
       end
@@ -121,7 +122,7 @@ class Group
       @groups.select {|f| !f.include?(book) }.first
     end
     
-    def max_group_size_exceeded?
+    def below_max_group_size?
       @groups[group_index].length < max_group_size
     end
   
